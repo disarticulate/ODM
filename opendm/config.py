@@ -170,6 +170,12 @@ def config(argv=None, parser=None):
                         metavar='<path>',
                         action=StoreValue,
                         help='Path to the project folder. Your project folder should contain subfolders for each dataset. Each dataset should have an "images" folder.')
+    parser.add_argument('--config',
+                        metavar='<config.json>',
+                        default='',
+                        type=str,
+                        action=StoreValue,
+                        help='Config file for default settings. Commandline arguments shall override these values')
     parser.add_argument('name',
                         metavar='<dataset name>',
                         action=StoreValue,
@@ -892,6 +898,19 @@ def config(argv=None, parser=None):
                           'Default: %(default)s'))
 
     args, unknown = parser.parse_known_args(argv)
+
+    if len(args.config) > 0:
+      try:
+        with open(args.config, 'r') as f:
+          args.config = json.load(f)  
+        log.ODM_INFO('%s loaded for default configuration; command line arguments will be overrided by config. DEPRECATED arguments will be ignored (check --help for current valid arguments)')
+        for key, value in args.config.items():
+          if hasattr(args, key):
+            setattr(args, key, value)
+        
+      except Exception as e:
+        log.ODM_WARNING("%s is not a valid json file or does not exist; using default args & commandline" % args.config)
+        
     DEPRECATED = ["--verbose", "--debug", "--time", "--resize-to", "--depthmap-resolution", "--pc-geometric", "--texturing-data-term", "--texturing-outlier-removal-type", "--texturing-tone-mapping", "--texturing-skip-local-seam-leveling"]
     unknown_e = [p for p in unknown if p not in DEPRECATED]
     if len(unknown_e) > 0:
